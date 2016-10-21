@@ -49,6 +49,7 @@ void printWelcomingMessage();
 int randomNumber(int min, int max);
 void charToIntConverter();
 void randomlyLookForLegalMove();
+void checkForPawnPromotion(int fromFile, int fromRank, int toFile, int toRank);
 
 //functions/variables for manual testing
 int initialFile, initialRank, finalFile, finalRank;
@@ -60,15 +61,15 @@ void checkIfTheMoveIsLegal();
 int main(){
 
     //randomly look for bugs by simulating chess play
-    simulateGamePlay();
+    //simulateGamePlay();
 
-    //when a new functionally is added, set up a testing position in the next function to test it out directly
-    //manuallyTestingFuction();
+    //when a new functionally is added, test it out directly by setting up a specific board position in this next function
+    manuallyTestingFuction();
 
     return 0;
 }
 
-//check if the move the move is legal
+//check if the move is legal
 bool isTheMoveLegal(int fromFile, int fromRank, int toFile, int toRank){
 
     //preliminary check, followed by a thorough check for legality
@@ -85,7 +86,7 @@ bool isTheMoveLegal(int fromFile, int fromRank, int toFile, int toRank){
 bool isSquareToSquareMoveLegal(int fromFile, int fromRank, int toFile, int toRank){
 
     if(isTheMovingFromSquareLegal(fromFile, fromRank) && isDestinationSquareUnoccupiedOrOpponentOccupied(toFile, toRank))
-            return true;
+        return true;
     else
         return false;
 
@@ -134,7 +135,7 @@ bool isDestinationSquareUnoccupiedOrOpponentOccupied(int toFile, int toRank){
     }
 }
 
-//to write a comment here would be redundant, and thus a waist of time (due to this function's self-descriptive name).....crap, too late! :)
+//to write a comment here would be redundant, and thus a waist of time (due to this function's self-descriptive name)...crap, too late! :)
 bool isDestinationSquareUnoccupied(int toFile, int toRank){
 
     if(chessBoardMatrix[toRank][toFile] == noPiece)
@@ -165,14 +166,17 @@ bool isDestinationSquareOpponentOccupied(int toFile, int toRank){
     }
 }
 
-//this function gets the piece on the moves square, then return true only if the move is legal
+/*
+    this function gets the piece that's on the initial/moving-from square (if any), then
+    returns true only if a move to the destination square constitutes a legal move
+*/
 bool isThePieceMoveLegal(int fromFile, int fromRank, int toFile, int toRank){
 
     int piece = getPiece(fromFile, fromRank);//get the moving piece
 
     bool isItLegal = false;
 
-    if(piece % 2 == 0)//if the moving piece is a black piece...
+    if(piece % 2 == 0)//if the moving piece is a black piece, then...
         piece--;//...make it a white piece (shortens the following switch statement in half)
 
     switch(piece){
@@ -484,6 +488,7 @@ void simulateGamePlay(){
 
         pieceOnMovingSquare = getPiece(moveHolderInSemiAlgebraicForm[0], moveHolderInSemiAlgebraicForm[1]);//get piece that moved, then...
         setPieceOnSquare(pieceOnMovingSquare, moveHolderInSemiAlgebraicForm[2], moveHolderInSemiAlgebraicForm[3]);//...place it on the go-to square (i.e. destination square)
+        checkForPawnPromotion(moveHolderInSemiAlgebraicForm[0], moveHolderInSemiAlgebraicForm[1], moveHolderInSemiAlgebraicForm[2], moveHolderInSemiAlgebraicForm[3]);//auto-promotes to a queen if possible
         setPieceOnSquare(noPiece, moveHolderInSemiAlgebraicForm[0], moveHolderInSemiAlgebraicForm[1]);//empty the square the moving piece moved from
         showchessBoard();//show the new board set-up
         moveCount++;//update the move count
@@ -567,7 +572,7 @@ void showchessBoardMatrix(){
 }
 
 /*
-    This function shows the board with the white pieces represented as follows:
+    This next function shows the board with the white pieces represented as follows:
     pawn = p, bishop = b, knight(aka horse) = h, rook = r, queen = q, king = k.
     The black pieces are represented with the same letter, only all in upper case.
 */
@@ -814,6 +819,21 @@ void randomlyLookForLegalMove(){
     }
 }
 
+/*
+    this next function will automatically promote a pawn to a queen if it made it to its last rank. This auto-queen promotion is good for now (probably around 99% of
+    pawn promotions are pawn-to-queen promotions). I'll add functionality that lets the user decide which piece he'd like to promote to later.
+*/
+void checkForPawnPromotion(int fromFile, int fromRank, int toFile, int toRank){
+
+    if(3/(getPiece(fromFile, fromRank) + 1)){//if the moving piece is a pawn...
+
+        if(toRank == eight && whoseMove == whitesMove)//if it's a white pawn and it made it to its last rank, then...
+            setPieceOnSquare(whiteQueen, toFile, toRank);//...promote it to a white queen
+        else if(toRank == one && whoseMove == blacksMove)//else if it's a black pawn and it made it to its last rank, then..
+            setPieceOnSquare(blackQueen, toFile, toRank);//...promote it to a black queen
+    }
+}
+
 //intended for use in the manuallyTestingFuction only
 void moveThePieceFromSquare(int file, int rank){
 
@@ -843,6 +863,7 @@ void checkIfTheMoveIsLegal(){
         int pieceOnSquare = getPiece(initialFile, initialRank);
         setPieceOnSquare(noPiece, initialFile, initialRank);
         setPieceOnSquare(pieceOnSquare, finalFile, finalRank);
+        checkForPawnPromotion(initialFile, initialRank, finalFile, finalRank);//auto-promotes to a queen if possible
         showchessBoard();
 
     }
@@ -856,7 +877,7 @@ void manuallyTestingFuction(){
     srand(time(NULL));//initiate random-generating capabilities
 
     //decide whose move it is here
-    whoseMove = whitesMove;
+    whoseMove = blacksMove;
 
     //set up the pieces here. Note that you have to spell out the number of the rank (e.g. write "one" instead of "1", "two" instead of "2" etc.)
     setPieceOnSquare(blackQueen, b, four);
@@ -865,14 +886,15 @@ void manuallyTestingFuction(){
     setPieceOnSquare(whiteKnight, d, five);
 
     //uncommenting this next line has the same effect as commenting out all the above setPieceOnSquare functions. It's useful if you want to set up a new board position without deleting a prior one
-    //clearEntireBoard();
+    clearEntireBoard();
+    setPieceOnSquare(blackPawn, e, two);
 
     //this function will show the current board set-up
     printf("Here is the initial position of the pieces:\n\n");
     showchessBoard();
 
-    moveThePieceFromSquare(d, five);//enter the what piece's square your moving FROM here
-    moveThePieceToSquare(e, seven);//enter the what piece's square your moving TO here
+    moveThePieceFromSquare(e, two);//enter the what piece's square your moving FROM here
+    moveThePieceToSquare(e, one);//enter the what piece's square your moving TO here
 
     //this checks/displays if the move was legal or not
     checkIfTheMoveIsLegal();
